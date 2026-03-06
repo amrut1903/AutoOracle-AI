@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoOracle AI — Model Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#020408;--s1:#060c12;--s2:#0a1220;--s3:#0e1a2c;
+  --border:#0f2035;--border2:#163050;
+  --a:#00d4ff;--a2:#0077bb;--a3:#00ffcc;
+  --gold:#ffc140;--red:#ff3d6b;--pur:#a855f7;
+  --text:#c8e8ff;--muted:#4a7090;--label:#5a90b0;
+  --raj:'Rajdhani',sans-serif;--exo:'Exo 2',sans-serif;--tech:'Share Tech Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--exo);background:var(--bg);color:var(--text);min-height:100vh;padding:0 0 80px;overflow-x:hidden}
+.vbg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.vbg video{width:100%;height:100%;object-fit:cover;opacity:.45;filter:brightness(.75) saturate(.55) hue-rotate(190deg)}
+.vbg-shade{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(2,4,8,.42) 0%,rgba(2,4,8,.18) 40%,rgba(2,4,8,.48) 100%)}
+.scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,.008) 2px,rgba(0,212,255,.008) 4px)}
+.dotgrid{position:fixed;inset:0;z-index:1;pointer-events:none;background-image:radial-gradient(circle,rgba(0,212,255,.06) 1px,transparent 1px);background-size:24px 24px;mask-image:radial-gradient(ellipse 90% 90% at 50% 50%,black 10%,transparent);-webkit-mask-image:radial-gradient(ellipse 90% 90% at 50% 50%,black 10%,transparent)}
+.wrap{max-width:1040px;margin:0 auto;position:relative;z-index:10;padding:0 24px}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:24px 0 20px;margin-bottom:36px;border-bottom:1px solid rgba(0,212,255,.12);flex-wrap:wrap;gap:14px}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:38px;height:38px;border-radius:8px;background:linear-gradient(135deg,rgba(0,212,255,.18),rgba(0,255,204,.08));border:1px solid rgba(0,212,255,.35);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 22px rgba(0,212,255,.2)}
+.logo-name{font-family:var(--raj);font-size:21px;font-weight:700;letter-spacing:2.5px;background:linear-gradient(90deg,#fff 0%,var(--a) 50%,var(--a3) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo-sub{font-family:var(--tech);font-size:10px;letter-spacing:2.5px;color:var(--label);margin-top:1px}
+.back{display:flex;align-items:center;gap:7px;padding:8px 16px;border-radius:4px;border:1px solid var(--border2);background:rgba(0,212,255,.03);color:var(--label);font-family:var(--tech);font-size:11px;letter-spacing:2px;text-decoration:none;text-transform:uppercase;transition:all .2s}
+.back:hover{border-color:rgba(0,212,255,.38);color:var(--a);background:rgba(0,212,255,.07)}
+.sec-head{font-family:var(--tech);font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--label);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.sec-head::before{content:'//';color:var(--a);opacity:.5;margin-right:2px}
+.sec-head::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(0,212,255,.18),transparent)}
+/* HERO BANNER */
+.hero-band{background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(0,255,204,.04));border:1px solid rgba(0,212,255,.25);border-radius:10px;padding:30px 36px;margin-bottom:28px;position:relative;overflow:hidden;display:grid;grid-template-columns:1fr auto;align-items:center;gap:28px}
+.hero-band::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--a),var(--a3),transparent)}
+.hero-band::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 50% 80% at 0% 50%,rgba(0,212,255,.05),transparent)}
+.hb-kicker{font-family:var(--tech);font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--label);margin-bottom:8px}
+.hb-title{font-family:var(--raj);font-size:34px;font-weight:700;letter-spacing:3px;color:var(--a);margin-bottom:7px;line-height:1.1}
+.hb-desc{font-family:var(--tech);font-size:12px;color:var(--muted);letter-spacing:.5px;line-height:1.8}
+/* ANIMATED SVG DIAL */
+.dial-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;flex-shrink:0}
+.dial-svg{width:110px;height:110px;transform:rotate(-90deg)}
+.dial-bg{fill:none;stroke:var(--border2);stroke-width:7}
+.dial-fg{fill:none;stroke:url(#dg);stroke-width:7;stroke-linecap:round;stroke-dasharray:298;stroke-dashoffset:298;transition:stroke-dashoffset 2.2s cubic-bezier(.22,1,.36,1)}
+.dial-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.dial-n{font-family:var(--raj);font-size:24px;font-weight:700;color:var(--a3)}
+.dial-l{font-family:var(--tech);font-size:9px;letter-spacing:2px;color:var(--muted);margin-top:1px}
+.dial-pos{position:relative;width:110px;height:110px}
+.live-chip{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:3px;background:rgba(0,255,204,.07);border:1px solid rgba(0,255,204,.2);font-family:var(--tech);font-size:10px;letter-spacing:1px;color:var(--a3)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--a3);animation:blink 1.6s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+/* METRICS ROW */
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
+.mc{background:rgba(5,10,20,.9);border:1px solid var(--border2);border-radius:10px;padding:22px;position:relative;overflow:hidden;transition:border-color .2s,transform .2s}
+.mc:hover{border-color:rgba(0,212,255,.28);transform:translateY(-2px)}
+.mc::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,255,.25),transparent)}
+.mc-ico{font-size:24px;margin-bottom:10px}
+.mc-lbl{font-family:var(--tech);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.mc-val{font-family:var(--raj);font-size:30px;font-weight:600;letter-spacing:-.5px}
+.mc-val.cyan{color:var(--a)}.mc-val.green{color:var(--a3)}.mc-val.gold{color:var(--gold)}
+.mc-sub{font-family:var(--tech);font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:.3px;line-height:1.6}
+/* CHARTS ROW */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px}
+.chart-card{background:rgba(5,10,20,.9);border:1px solid var(--border2);border-radius:10px;padding:22px;position:relative;overflow:hidden}
+.chart-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,255,.2),transparent)}
+.chart-title{font-family:var(--raj);font-size:16px;font-weight:600;letter-spacing:1px;margin-bottom:16px;color:var(--text)}
+.chart-title span{font-family:var(--tech);font-size:10px;letter-spacing:2px;color:var(--label);margin-left:8px}
+/* BAR CHART */
+.bar-chart{display:flex;align-items:flex-end;gap:8px;height:140px;padding-top:8px}
+.bar-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%}
+.bar-body{width:100%;border-radius:3px 3px 0 0;background:linear-gradient(to top,var(--bc-bot,var(--a2)),var(--bc-top,var(--a)));position:relative;overflow:hidden;transition:height 1.4s cubic-bezier(.22,1,.36,1);min-height:4px}
+.bar-body::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.08),transparent);pointer-events:none}
+.bar-val{font-family:var(--raj);font-size:12px;color:var(--a3);white-space:nowrap}
+.bar-lbl{font-family:var(--tech);font-size:9px;color:var(--muted);letter-spacing:.3px;text-align:center;white-space:nowrap}
+.bar-wrap{flex:1;display:flex;align-items:flex-end;width:100%}
+/* DONUT CHART */
+.donut-area{display:flex;align-items:center;gap:22px}
+.donut-svg-wrap{position:relative;flex-shrink:0;width:130px;height:130px}
+.donut-svg{width:130px;height:130px;transform:rotate(-90deg)}
+.donut-bg-r{fill:none;stroke:var(--border2);stroke-width:14}
+.donut-fg-r{fill:none;stroke-width:14;stroke-linecap:round;stroke-dasharray:283;stroke-dashoffset:283;transition:stroke-dashoffset 1.8s cubic-bezier(.22,1,.36,1)}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.dc-val{font-family:var(--raj);font-size:22px;font-weight:700}
+.dc-sub{font-family:var(--tech);font-size:9px;letter-spacing:1.5px;color:var(--muted);margin-top:2px}
+.donut-legend{display:flex;flex-direction:column;gap:10px;flex:1}
+.dl-item{display:flex;align-items:center;gap:8px}
+.dl-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.dl-name{font-family:var(--tech);font-size:11px;color:var(--label);flex:1;letter-spacing:.3px}
+.dl-val{font-family:var(--raj);font-size:13px;font-weight:600}
+/* R2 SCALE */
+.scale-card{background:rgba(5,10,20,.9);border:1px solid var(--border2);border-radius:10px;padding:22px 26px;margin-bottom:28px;position:relative}
+.scale-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,255,204,.25),transparent)}
+.scale-lbl{font-family:var(--tech);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.scale-bar{position:relative;height:32px;border-radius:6px;background:var(--border2);overflow:visible;margin-bottom:10px}
+.scale-bar-fill{position:absolute;inset:0;border-radius:6px;background:linear-gradient(90deg,var(--red) 0%,var(--gold) 35%,var(--a3) 65%,#00ffee 100%);height:100%;width:0;transition:width 1.8s cubic-bezier(.22,1,.36,1)}
+.scale-marker{position:absolute;top:-8px;bottom:-8px;width:2px;border-radius:1px;background:#fff;left:0;transform:translateX(-50%);box-shadow:0 0 10px rgba(255,255,255,.7),0 0 4px white;transition:left 1.8s cubic-bezier(.22,1,.36,1)}
+.scale-marks{display:flex;justify-content:space-between;font-family:var(--tech);font-size:10px;color:var(--muted);margin-top:12px}
+.scale-badges{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.sbadge{font-family:var(--tech);font-size:11px;letter-spacing:.5px;padding:6px 14px;border-radius:3px;display:flex;align-items:center;gap:6px}
+.sbadge.poor{background:rgba(255,61,107,.06);border:1px solid rgba(255,61,107,.2);color:var(--red)}
+.sbadge.ok{background:rgba(255,193,64,.06);border:1px solid rgba(255,193,64,.2);color:var(--gold)}
+.sbadge.good{background:rgba(0,255,204,.06);border:1px solid rgba(0,255,204,.2);color:var(--a3)}
+.sbadge.best{background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);color:var(--a)}
+.sbadge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+/* FEATURE IMPORTANCE */
+.feat-card{background:rgba(5,10,20,.9);border:1px solid var(--border2);border-radius:10px;padding:22px;margin-bottom:28px}
+.feat-card h3{font-family:var(--raj);font-size:16px;font-weight:600;letter-spacing:1px;margin-bottom:18px;color:var(--text)}
+.feat-row{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.feat-row:last-child{margin-bottom:0}
+.feat-nm{font-family:var(--tech);font-size:12px;color:var(--label);min-width:130px;letter-spacing:.3px}
+.feat-bg{flex:1;background:var(--border2);border-radius:4px;height:9px;overflow:hidden}
+.feat-fg{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--a2),var(--a),var(--a3));width:0;transition:width 1.4s cubic-bezier(.22,1,.36,1)}
+.feat-pct{font-family:var(--tech);font-size:12px;color:var(--muted);min-width:36px;text-align:right}
+/* INFO GRID */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px}
+.info-card{background:rgba(5,10,20,.9);border:1px solid var(--border2);border-radius:10px;padding:20px}
+.info-card h3{font-family:var(--raj);font-size:15px;font-weight:600;letter-spacing:1px;margin-bottom:16px;color:var(--text)}
+.irow{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)}
+.irow:last-child{border-bottom:none}
+.ik{color:var(--muted);font-family:var(--tech);font-size:11px;letter-spacing:.3px}
+.iv{color:var(--text);font-family:var(--tech);font-size:12px;font-weight:500}
+.tag{display:inline-block;padding:4px 11px;border-radius:3px;font-size:10px;font-family:var(--tech);letter-spacing:.5px;margin:3px;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.15);color:var(--a)}
+/* PIPELINE */
+.pipeline{display:flex;align-items:stretch;gap:0;margin-bottom:28px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.ps{flex:1;min-width:115px;background:rgba(5,10,20,.9);border:1px solid var(--border2);padding:18px 14px;text-align:center;position:relative;transition:background .2s,border-color .2s}
+.ps:first-child{border-radius:8px 0 0 8px}
+.ps:last-child{border-radius:0 8px 8px 0}
+.ps+.ps{border-left:none}
+.ps:hover{background:rgba(10,18,32,.95);border-color:rgba(0,212,255,.25)}
+.ps-arr{position:absolute;right:-11px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:var(--tech);font-size:10px;color:var(--label);z-index:2}
+.ps:last-child .ps-arr{display:none}
+.ps-ico{font-size:26px;margin-bottom:8px}
+.ps-num{font-family:var(--tech);font-size:10px;letter-spacing:2px;color:var(--a);opacity:.7;margin-bottom:4px}
+.ps-title{font-family:var(--raj);font-size:14px;font-weight:600;letter-spacing:1px;color:var(--text);margin-bottom:6px}
+.ps-desc{font-family:var(--tech);font-size:10px;color:var(--muted);letter-spacing:.2px;line-height:1.8}
+@media(max-width:700px){.hero-band{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.info-grid{grid-template-columns:1fr}.charts-row{grid-template-columns:1fr}.pipeline{flex-direction:column}.ps{border-radius:0!important;border-left:1px solid var(--border2)!important;border-top:none}.ps:first-child{border-radius:8px 8px 0 0!important;border-top:1px solid var(--border2)!important}.ps:last-child{border-radius:0 0 8px 8px!important}.ps-arr{right:auto;left:50%;bottom:-11px;top:auto;transform:translateX(-50%)}}
+</style>
+</head>
+<body>
+<div class="vbg">
+  <video autoplay muted loop playsinline>
+    <source src="/static/videos/teacher_bg.mp4" type="video/mp4">
+  </video>
+  <div class="vbg-shade"></div>
+</div>
+<div class="scanlines"></div>
+<div class="dotgrid"></div>
+<div class="wrap">
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-icon">🚗</div>
+      <div>
+        <div class="logo-name">AutoOracle AI</div>
+        <div class="logo-sub">Model Intelligence Dashboard</div>
+      </div>
+    </div>
+    <a class="back" href="/">
+      <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M19 12H5m0 0l7 7m-7-7l7-7"/></svg>
+      Back to Predictor
+    </a>
+  </div>
+
+  <!-- HERO BAND -->
+  <div class="hero-band">
+    <div>
+      <div class="hb-kicker">Best Performing Model · Currently Active</div>
+      <div class="hb-title">GRADIENT BOOSTING</div>
+      <div class="hb-desc">n_estimators=1500 · learning_rate=0.015 · max_depth=7<br>subsample=0.85 · max_features=0.8 · log1p price transform</div>
+    </div>
+    <div class="dial-wrap">
+      <div class="dial-pos">
+        <svg class="dial-svg" viewBox="0 0 110 110">
+          <defs>
+            <linearGradient id="dg" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#0077bb"/>
+              <stop offset="50%" stop-color="#00d4ff"/>
+              <stop offset="100%" stop-color="#00ffcc"/>
+            </linearGradient>
+          </defs>
+          <circle class="dial-bg" cx="55" cy="55" r="47.5"/>
+          <circle class="dial-fg" id="dialFg" cx="55" cy="55" r="47.5"/>
+        </svg>
+        <div class="dial-center">
+          <div class="dial-n" id="dialN">—</div>
+          <div class="dial-l">R² SCORE</div>
+        </div>
+      </div>
+      <div class="live-chip"><span class="live-dot"></span>TRAINED &amp; LIVE</div>
+    </div>
+  </div>
+
+  <!-- METRICS -->
+  <div class="sec-head">Core Metrics</div>
+  <div class="metrics">
+    <div class="mc">
+      <div class="mc-ico">🎯</div>
+      <div class="mc-lbl">R² Score</div>
+      <div class="mc-val green" id="metR2">—</div>
+      <div class="mc-sub" id="metR2Sub">Initializing...</div>
+    </div>
+    <div class="mc">
+      <div class="mc-ico">📉</div>
+      <div class="mc-lbl">Mean Absolute Error</div>
+      <div class="mc-val gold">₹{{ "{:,.0f}".format(mae) }}</div>
+      <div class="mc-sub">Average rupee gap from actual resale value</div>
+    </div>
+    <div class="mc">
+      <div class="mc-ico">📊</div>
+      <div class="mc-lbl">Root Mean Sq. Error</div>
+      <div class="mc-val cyan">₹{{ "{:,.0f}".format(rmse) }}</div>
+      <div class="mc-sub">Penalises large errors more — lower is better</div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW -->
+  <div class="sec-head">Visual Analytics</div>
+  <div class="charts-row">
+    <!-- BAR CHART: Model Comparison -->
+    <div class="chart-card">
+      <div class="chart-title">Algorithm Comparison <span>R² SCORE</span></div>
+      <div class="bar-chart" id="barChart"></div>
+    </div>
+    <!-- DONUT CHART: Feature Importance -->
+    <div class="chart-card">
+      <div class="chart-title">Feature Importance <span>% IMPACT</span></div>
+      <div class="donut-area">
+        <div class="donut-svg-wrap">
+          <svg class="donut-svg" viewBox="0 0 100 100">
+            <defs>
+              <linearGradient id="dg2" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#0077bb"/>
+                <stop offset="100%" stop-color="#00ffcc"/>
+              </linearGradient>
+            </defs>
+            <circle class="donut-bg-r" cx="50" cy="50" r="36"/>
+            <circle class="donut-fg-r" id="donutFg" cx="50" cy="50" r="36" stroke="url(#dg2)"/>
+          </svg>
+          <div class="donut-center">
+            <div class="dc-val" id="dcVal" style="color:var(--a)">—</div>
+            <div class="dc-sub">TOP FEAT</div>
+          </div>
+        </div>
+        <div class="donut-legend" id="donutLegend"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- R² PERFORMANCE SCALE -->
+  <div class="sec-head">Performance Scale</div>
+  <div class="scale-card">
+    <div class="scale-lbl">R² Score — Where Your Model Sits on the Spectrum</div>
+    <div class="scale-bar">
+      <div class="scale-bar-fill" id="scaleFill"></div>
+      <div class="scale-marker" id="scaleMarker"></div>
+    </div>
+    <div class="scale-marks">
+      <span>0.0 — Random</span><span>0.25</span><span>0.50 — Weak</span>
+      <span>0.75 — Good</span><span>1.0 — Perfect</span>
+    </div>
+    <div class="scale-badges">
+      <div class="sbadge poor">Below 0.5 — Poor</div>
+      <div class="sbadge ok">0.5–0.7 — Moderate</div>
+      <div class="sbadge good">0.7–0.85 — Strong  ← You Are Here</div>
+      <div class="sbadge best">0.85–1.0 — Excellent</div>
+    </div>
+  </div>
+
+  <!-- FEATURE IMPORTANCE BARS -->
+  <div class="sec-head">Feature Breakdown</div>
+  <div class="feat-card">
+    <h3>What Drives the Prediction</h3>
+    <div class="feat-row"><div class="feat-nm">brand</div><div class="feat-bg"><div class="feat-fg" data-w="28"></div></div><div class="feat-pct">28%</div></div>
+    <div class="feat-row"><div class="feat-nm">car_age</div><div class="feat-bg"><div class="feat-fg" data-w="22"></div></div><div class="feat-pct">22%</div></div>
+    <div class="feat-row"><div class="feat-nm">km_driven</div><div class="feat-bg"><div class="feat-fg" data-w="18"></div></div><div class="feat-pct">18%</div></div>
+    <div class="feat-row"><div class="feat-nm">km_per_year</div><div class="feat-bg"><div class="feat-fg" data-w="12"></div></div><div class="feat-pct">12%</div></div>
+    <div class="feat-row"><div class="feat-nm">km_age_ratio</div><div class="feat-bg"><div class="feat-fg" data-w="9"></div></div><div class="feat-pct">9%</div></div>
+    <div class="feat-row"><div class="feat-nm">fuel_type</div><div class="feat-bg"><div class="feat-fg" data-w="6"></div></div><div class="feat-pct">6%</div></div>
+    <div class="feat-row"><div class="feat-nm">transmission</div><div class="feat-bg"><div class="feat-fg" data-w="3"></div></div><div class="feat-pct">3%</div></div>
+    <div class="feat-row"><div class="feat-nm">owner/seller</div><div class="feat-bg"><div class="feat-fg" data-w="2"></div></div><div class="feat-pct">2%</div></div>
+  </div>
+
+  <!-- INFO GRID -->
+  <div class="sec-head">Dataset &amp; Features</div>
+  <div class="info-grid">
+    <div class="info-card">
+      <h3>Dataset Info</h3>
+      <div class="irow"><span class="ik">Source</span><span class="iv">Car Dekho India</span></div>
+      <div class="irow"><span class="ik">File</span><span class="iv">dataset/car_dekho.csv</span></div>
+      <div class="irow"><span class="ik">Target Column</span><span class="iv">selling_price (₹)</span></div>
+      <div class="irow"><span class="ik">Transform</span><span class="iv">log1p → expm1</span></div>
+      <div class="irow"><span class="ik">Train/Test Split</span><span class="iv">80% / 20%</span></div>
+      <div class="irow"><span class="ik">Categorical Enc.</span><span class="iv">OneHotEncoder</span></div>
+    </div>
+    <div class="info-card">
+      <h3>Engineered Features</h3>
+      <div class="irow"><span class="ik">car_age</span><span class="iv">2024 − year</span></div>
+      <div class="irow"><span class="ik">km_per_year</span><span class="iv">km ÷ (age + 1)</span></div>
+      <div class="irow"><span class="ik">log_km</span><span class="iv">log(km_driven + 1)</span></div>
+      <div class="irow"><span class="ik">age_squared</span><span class="iv">car_age²</span></div>
+      <div class="irow"><span class="ik">km_age_ratio</span><span class="iv">km × car_age</span></div>
+      <div class="irow"><span class="ik">price_log</span><span class="iv">log(selling_price + 1)</span></div>
+    </div>
+  </div>
+
+  <!-- CAT VALUES -->
+  <div class="sec-head">Accepted Categorical Values</div>
+  <div class="info-grid" style="margin-bottom:28px">
+    {% for key, vals in cat_unique.items() %}
+    <div class="info-card">
+      <h3>{{ key | upper }}</h3>
+      <div style="margin-top:8px">{% for v in vals %}<span class="tag">{{ v }}</span>{% endfor %}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- PIPELINE -->
+  <div class="sec-head">ML Pipeline</div>
+  <div class="pipeline">
+    <div class="ps"><div class="ps-arr">→</div><div class="ps-ico">📥</div><div class="ps-num">01</div><div class="ps-title">LOAD</div><div class="ps-desc">car_dekho.csv<br>All brands</div></div>
+    <div class="ps"><div class="ps-arr">→</div><div class="ps-ico">🧹</div><div class="ps-num">02</div><div class="ps-title">CLEAN</div><div class="ps-desc">Price &gt; ₹10k<br>km &lt; 300k<br>age &lt; 25yr</div></div>
+    <div class="ps"><div class="ps-arr">→</div><div class="ps-ico">⚙️</div><div class="ps-num">03</div><div class="ps-title">ENGINEER</div><div class="ps-desc">car_age<br>km_per_year<br>log_km·age_sq</div></div>
+    <div class="ps"><div class="ps-arr">→</div><div class="ps-ico">🔢</div><div class="ps-num">04</div><div class="ps-title">ENCODE</div><div class="ps-desc">OneHotEncoder<br>5 categories</div></div>
+    <div class="ps"><div class="ps-arr">→</div><div class="ps-ico">🤖</div><div class="ps-num">05</div><div class="ps-title">TRAIN</div><div class="ps-desc">GB · 1500 trees<br>lr=0.015<br>depth=7</div></div>
+    <div class="ps"><div class="ps-ico">✅</div><div class="ps-num">06</div><div class="ps-title">EVALUATE</div><div class="ps-desc" id="pipeEval">R²=—<br>MAE=—</div></div>
+  </div>
+
+</div>
+
+<script>
+const R2 = {{ r2 }};
+const MAE = {{ mae }};
+const pct = Math.round(R2 * 100);
+
+// Dial
+const circ = 2*Math.PI*47.5;
+setTimeout(()=>{document.getElementById("dialFg").style.strokeDashoffset = circ-(R2*circ)},200);
+document.getElementById("dialN").textContent = R2;
+document.getElementById("metR2").textContent = R2;
+document.getElementById("metR2Sub").textContent = "Model explains " + pct + "% of price variance";
+
+// Scale bar
+setTimeout(()=>{
+  document.getElementById("scaleFill").style.width = pct+"%";
+  document.getElementById("scaleMarker").style.left = pct+"%";
+},300);
+
+// Pipeline eval
+document.getElementById("pipeEval").innerHTML = "R²="+R2+"<br>MAE=₹"+MAE.toLocaleString("en-IN",{maximumFractionDigits:0});
+
+// Feature bars
+document.querySelectorAll(".feat-fg").forEach(el=>{
+  const w=el.getAttribute("data-w");
+  setTimeout(()=>{el.style.width=w+"%"},500);
+});
+
+// === ANIMATED BAR CHART ===
+const models=[
+  {name:"Linear Reg.",r2:0.565,top:"#e84040",bot:"#8a1a1a"},
+  {name:"Dec. Tree",r2:0.621,top:"#f0c040",bot:"#8a6a10"},
+  {name:"Rand.Forest",r2:0.705,top:"#00d4ff",bot:"#004060"},
+  {name:"GB (old)",r2:0.724,top:"#a855f7",bot:"#4a1a80"},
+  {name:"GB (new) ✓",r2:R2,top:"#00ffcc",bot:"#006644"},
+];
+const bc=document.getElementById("barChart");
+models.forEach(m=>{
+  const item=document.createElement("div"); item.className="bar-item";
+  const valEl=document.createElement("div"); valEl.className="bar-val"; valEl.textContent=m.r2.toFixed(3);
+  const wrapEl=document.createElement("div"); wrapEl.className="bar-wrap";
+  const bodyEl=document.createElement("div"); bodyEl.className="bar-body";
+  bodyEl.style.setProperty("--bc-top",m.top); bodyEl.style.setProperty("--bc-bot",m.bot);
+  bodyEl.style.height="0%"; bodyEl.style.width="100%"; bodyEl.style.alignSelf="flex-end";
+  const lblEl=document.createElement("div"); lblEl.className="bar-lbl"; lblEl.textContent=m.name;
+  wrapEl.appendChild(bodyEl); item.appendChild(valEl); item.appendChild(wrapEl); item.appendChild(lblEl);
+  bc.appendChild(item);
+  setTimeout(()=>{bodyEl.style.height=(m.r2*100)+"%"},400);
+});
+
+// === DONUT CHART (Feature Importance) ===
+const feats=[
+  {nm:"brand",pct:28,c:"#00ffcc"},
+  {nm:"car_age",pct:22,c:"#00d4ff"},
+  {nm:"km_driven",pct:18,c:"#a855f7"},
+  {nm:"km_per_yr",pct:12,c:"#f0c040"},
+  {nm:"others",pct:20,c:"#3a7090"},
+];
+// Donut: show largest segment animated
+const donutR=36,donutCirc=2*Math.PI*donutR;
+const topPct=feats[0].pct;
+document.getElementById("dcVal").textContent=topPct+"%";
+setTimeout(()=>{
+  document.getElementById("donutFg").style.strokeDashoffset=donutCirc-(topPct/100*donutCirc);
+},300);
+// Legend
+const dl=document.getElementById("donutLegend");
+feats.forEach(f=>{
+  const item=document.createElement("div"); item.className="dl-item";
+  const dot=document.createElement("div"); dot.className="dl-dot"; dot.style.background=f.c;
+  const nm=document.createElement("div"); nm.className="dl-name"; nm.textContent=f.nm;
+  const val=document.createElement("div"); val.className="dl-val"; val.textContent=f.pct+"%"; val.style.color=f.c;
+  item.appendChild(dot); item.appendChild(nm); item.appendChild(val); dl.appendChild(item);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+/* Shared base — templates use inline styles, this handles scrollbar + selection */
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:#07090f}
+::-webkit-scrollbar-thumb{background:#1e2d45;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#5a6a85}
+::selection{background:rgba(79,142,247,0.25);color:#e8edf5}
+img{display:block;max-width:100%}

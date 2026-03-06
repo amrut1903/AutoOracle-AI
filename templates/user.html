@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoOracle AI — Resale Price Predictor</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#020408;--s1:#060c12;--s2:#0a1220;--s3:#0e1a2c;
+  --border:#0f2035;--border2:#163050;
+  --a:#00d4ff;--a2:#0077bb;--a3:#00ffcc;
+  --gold:#ffc140;--red:#ff3d6b;
+  --text:#c8e8ff;--muted:#4a7090;--label:#5a90b0;
+  --raj:'Rajdhani',sans-serif;--exo:'Exo 2',sans-serif;--tech:'Share Tech Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--exo);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.vbg{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.vbg video{width:100%;height:100%;object-fit:cover;opacity:.65;filter:brightness(.95) saturate(.7) hue-rotate(180deg)}
+.vbg-shade{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(2,4,8,.30) 0%,rgba(2,4,8,.12) 40%,rgba(2,4,8,.30) 100%)}
+.scanlines{position:fixed;inset:0;z-index:1;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,.009) 2px,rgba(0,212,255,.009) 4px)}
+.dotgrid{position:fixed;inset:0;z-index:1;pointer-events:none;background-image:radial-gradient(circle,rgba(0,212,255,.07) 1px,transparent 1px);background-size:24px 24px;mask-image:radial-gradient(ellipse 85% 85% at 50% 50%,black 15%,transparent);-webkit-mask-image:radial-gradient(ellipse 85% 85% at 50% 50%,black 15%,transparent)}
+.corner{position:fixed;width:44px;height:44px;z-index:2;pointer-events:none;opacity:.22}
+.corner::before,.corner::after{content:'';position:absolute;background:var(--a)}
+.c-tl{top:18px;left:18px}.c-tl::before{top:0;left:0;width:100%;height:1px}.c-tl::after{top:0;left:0;width:1px;height:100%}
+.c-tr{top:18px;right:18px}.c-tr::before{top:0;right:0;width:100%;height:1px}.c-tr::after{top:0;right:0;width:1px;height:100%}
+.c-bl{bottom:18px;left:18px}.c-bl::before{bottom:0;left:0;width:100%;height:1px}.c-bl::after{bottom:0;left:0;width:1px;height:100%}
+.c-br{bottom:18px;right:18px}.c-br::before{bottom:0;right:0;width:100%;height:1px}.c-br::after{bottom:0;right:0;width:1px;height:100%}
+.page{max-width:740px;margin:0 auto;position:relative;z-index:10;padding:0 20px 90px}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:24px 0 20px;margin-bottom:42px;border-bottom:1px solid rgba(0,212,255,.12)}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,rgba(0,212,255,.18),rgba(0,255,204,.08));border:1px solid rgba(0,212,255,.35);display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 0 22px rgba(0,212,255,.2),inset 0 0 18px rgba(0,212,255,.04)}
+.logo-words{display:flex;flex-direction:column}
+.logo-name{font-family:var(--raj);font-size:22px;font-weight:700;letter-spacing:2.5px;background:linear-gradient(90deg,#fff 0%,var(--a) 50%,var(--a3) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo-tagline{font-family:var(--tech);font-size:7.5px;letter-spacing:3px;color:var(--label);text-transform:uppercase;margin-top:1px}
+.badges{display:flex;gap:8px;align-items:center}
+.badge{font-family:var(--tech);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:5px 12px;border-radius:3px}
+.badge-live{background:rgba(0,255,204,.07);color:var(--a3);border:1px solid rgba(0,255,204,.22);display:flex;align-items:center;gap:6px}
+.badge-live::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--a3);animation:blink 1.6s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.badge-r2{background:rgba(0,212,255,.07);color:var(--a);border:1px solid rgba(0,212,255,.2)}
+.hero{text-align:center;margin-bottom:44px}
+.hero-kicker{display:inline-flex;align-items:center;gap:8px;margin-bottom:16px;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.18);padding:6px 18px;border-radius:2px;font-family:var(--tech);font-size:9.5px;letter-spacing:2px;color:var(--a)}
+.hero h1{font-family:var(--raj);font-size:58px;font-weight:700;letter-spacing:5px;line-height:1.0;margin-bottom:14px;background:linear-gradient(135deg,#fff 5%,var(--a) 45%,var(--a3) 95%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{color:#e0f4ff;font-family:var(--exo);font-size:14px;font-weight:400;letter-spacing:.4px;line-height:1.75;max-width:480px;margin:0 auto;text-shadow:0 1px 12px rgba(0,0,0,.95),0 0 30px rgba(0,0,0,.9),0 2px 4px rgba(0,0,0,1);}
+.sec-head{
+  font-family:var(--tech);
+  font-size:11px;
+  letter-spacing:5px;
+  text-transform:uppercase;
+  color:#ffffff;
+  margin-bottom:14px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:10px 16px;
+  background:linear-gradient(90deg,rgba(0,212,255,.08),rgba(0,212,255,.03) 70%,transparent);
+  border:1px solid rgba(0,212,255,.2);
+  border-right:none;
+  border-radius:4px 0 0 4px;
+  position:relative;
+  text-shadow:0 0 8px rgba(0,212,255,.5);
+}
+.sec-head::before{content:'';display:none;}
+.sec-head::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(0,212,255,.5),rgba(0,212,255,.1),transparent)}
+.brand-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:20px}
+.btile{background:rgba(5,10,20,.85);border:1px solid var(--border2);border-radius:8px;padding:15px 8px 11px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:9px;transition:all .22s cubic-bezier(.22,1,.36,1);position:relative;overflow:hidden}
+.btile::before{content:'';position:absolute;inset:0;opacity:0;background:radial-gradient(ellipse at 50% -10%,var(--bt-glow,rgba(0,212,255,.12)),transparent 68%);transition:opacity .22s}
+.btile:hover{border-color:rgba(0,212,255,.3);transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,0,0,.45)}
+.btile:hover::before{opacity:1}
+.btile.sel{border-color:var(--bt-c,var(--a)) !important;background:var(--bt-bg,rgba(0,212,255,.05)) !important;box-shadow:0 0 0 1px var(--bt-c,var(--a)),0 0 22px rgba(0,212,255,.12),inset 0 0 22px rgba(0,212,255,.03) !important;transform:translateY(-2px)}
+.btile.sel::before{opacity:1 !important}
+.btile.sel .bt-chk{opacity:1;transform:scale(1)}
+.bt-chk{position:absolute;top:5px;right:5px;width:14px;height:14px;border-radius:50%;background:var(--bt-c,var(--a));color:#000;font-size:7px;font-weight:800;display:flex;align-items:center;justify-content:center;opacity:0;transform:scale(0);transition:all .18s}
+.bt-logo{width:50px;height:38px;object-fit:contain;filter:drop-shadow(0 1px 6px rgba(0,0,0,.5));transition:transform .22s}
+.btile:hover .bt-logo,.btile.sel .bt-logo{transform:scale(1.1)}
+.bt-name{font-family:var(--tech);font-size:8.5px;letter-spacing:1.5px;color:var(--label);text-transform:uppercase;transition:color .2s}
+.btile.sel .bt-name{color:var(--bt-c,var(--a))}
+.showcase{display:none;margin-bottom:20px;animation:slideDown .4s cubic-bezier(.22,1,.36,1)}
+.showcase.on{display:block}
+@keyframes slideDown{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
+.sc-box{background:linear-gradient(160deg,rgba(0,212,255,.035),rgba(0,0,0,.25)),rgba(5,10,20,.94);border:1px solid rgba(0,212,255,.16);border-radius:10px;position:relative;overflow:hidden}
+.sc-topline{height:1px;background:linear-gradient(90deg,transparent 0%,var(--sc-c,var(--a)) 35%,var(--sc-c,var(--a)) 65%,transparent 100%)}
+.sc-ca{position:absolute;width:10px;height:10px;pointer-events:none}
+.sc-ca.tl{top:7px;left:7px;border-top:1px solid rgba(0,212,255,.4);border-left:1px solid rgba(0,212,255,.4)}
+.sc-ca.tr{top:7px;right:7px;border-top:1px solid rgba(0,212,255,.4);border-right:1px solid rgba(0,212,255,.4)}
+.sc-ca.bl{bottom:7px;left:7px;border-bottom:1px solid rgba(0,212,255,.4);border-left:1px solid rgba(0,212,255,.4)}
+.sc-ca.br{bottom:7px;right:7px;border-bottom:1px solid rgba(0,212,255,.4);border-right:1px solid rgba(0,212,255,.4)}
+.sc-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 12px}
+.sc-hleft{display:flex;align-items:center;gap:12px}
+.sc-thumb{width:44px;height:44px;border-radius:8px;flex-shrink:0;background:var(--sc-bg,rgba(0,212,255,.06));border:1px solid var(--sc-b,rgba(0,212,255,.2));display:flex;align-items:center;justify-content:center;overflow:hidden;transition:all .3s}
+.sc-thumb img{width:34px;height:34px;object-fit:contain}
+.sc-brand{font-family:var(--raj);font-size:21px;font-weight:700;letter-spacing:2px;color:var(--sc-c,var(--a));transition:color .3s}
+.sc-sub{font-family:var(--tech);font-size:8px;letter-spacing:2px;color:var(--muted);margin-top:2px;text-transform:uppercase}
+.sc-chip{font-family:var(--tech);font-size:9px;letter-spacing:1px;padding:5px 14px;border-radius:3px;transition:all .25s;white-space:nowrap;background:var(--sc-bg,rgba(0,212,255,.06));border:1px solid var(--sc-b,rgba(0,212,255,.18));color:var(--sc-c,var(--a))}
+.sc-stage{height:190px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.sc-stage::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 58% 65% at 50% 54%,var(--sc-glow,rgba(0,212,255,.07)),transparent 66%);pointer-events:none}
+.sc-skel{position:absolute;width:175px;height:175px;border-radius:50%;background:linear-gradient(135deg,var(--s2) 25%,var(--s3) 50%,var(--s2) 75%);background-size:400% 400%;animation:shimmer 1.4s ease infinite;display:none}
+@keyframes shimmer{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+.sc-ring{position:absolute;width:196px;height:196px;border-radius:50%;border:1px solid var(--sc-b,rgba(0,212,255,.12));box-shadow:0 0 38px var(--sc-glow,rgba(0,212,255,.06));animation:rPulse 3s ease infinite;opacity:0;transition:opacity .5s}
+.sc-ring.on{opacity:1}
+@keyframes rPulse{0%,100%{transform:scale(1);opacity:.45}50%{transform:scale(1.04);opacity:.9}}
+.sc-logo{width:155px;height:155px;object-fit:contain;opacity:0;transform:scale(.82);position:relative;z-index:3;display:block;transition:opacity .6s ease,transform .65s cubic-bezier(.22,1,.36,1);filter:drop-shadow(0 6px 26px var(--sc-glow,rgba(0,212,255,.38)))}
+.sc-logo.on{opacity:1;transform:scale(1)}
+.sc-floor{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:48%;height:1px;background:linear-gradient(90deg,transparent,var(--sc-c,var(--a)),transparent);opacity:.18}
+.sc-models{display:flex;gap:8px;padding:0 22px 16px;flex-wrap:wrap}
+.mbtn{font-family:var(--raj);font-size:13px;font-weight:600;letter-spacing:2px;
+  padding:9px 18px;border-radius:5px;cursor:pointer;transition:all .2s;
+  background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.3);
+  color:rgba(0,212,255,.75);text-transform:uppercase}
+.mbtn:hover{border-color:rgba(0,212,255,.7);color:#fff;background:rgba(0,212,255,.12);
+  box-shadow:0 0 14px rgba(0,212,255,.2)}
+.mbtn.on{background:rgba(0,212,255,.15);border-color:var(--sc-c,var(--a));
+  color:var(--sc-c,var(--a));box-shadow:0 0 16px rgba(0,212,255,.25)}
+.km-wrap{padding:2px 22px 22px}
+.sc-model-label{font-family:var(--raj);font-size:13px;font-weight:600;letter-spacing:2px;
+  text-transform:uppercase;color:rgba(0,212,255,.6);padding:0 22px 10px;
+  display:flex;align-items:center;gap:10px}
+.sc-model-label::before{content:'▸';color:var(--sc-c,var(--a));font-size:12px}
+.sc-model-label::after{content:'';flex:1;height:1px;
+  background:linear-gradient(90deg,rgba(0,212,255,.25),transparent)}
+.km-title{font-family:var(--tech);font-size:8.5px;letter-spacing:2.5px;text-transform:uppercase;color:var(--label);margin-bottom:12px;display:flex;align-items:center;gap:9px}
+.km-title::after{content:'';flex:1;height:1px;background:var(--border2)}
+.km-outer{position:relative;height:54px;margin-bottom:5px}
+.km-track{position:absolute;top:50%;transform:translateY(-50%);left:0;right:0;height:4px;background:var(--border2);border-radius:2px}
+.km-fill{height:100%;width:0;border-radius:2px;background:linear-gradient(90deg,var(--sc-c,var(--a)),var(--sc-c2,var(--a3)));transition:none}
+.km-car{position:absolute;top:50%;transform:translateY(-50%) translateX(-50%);width:62px;height:30px;pointer-events:none;filter:drop-shadow(0 3px 14px var(--sc-glow,rgba(0,212,255,.45)))}
+.km-input{position:absolute;top:50%;transform:translateY(-50%);left:0;right:0;height:40px;margin-top:-20px;opacity:0;cursor:pointer;-webkit-appearance:none;appearance:none;width:100%}
+.km-input::-webkit-slider-thumb{-webkit-appearance:none;width:64px;height:40px;cursor:grab}
+.km-input:active::-webkit-slider-thumb{cursor:grabbing}
+.km-marks{display:flex;justify-content:space-between;font-family:var(--tech);font-size:8px;color:var(--muted)}
+.km-val{text-align:center;margin-top:7px}
+.km-num{font-family:var(--raj);font-size:26px;font-weight:600;letter-spacing:1px;color:var(--sc-c,var(--a));transition:color .3s}
+.km-unit{font-family:var(--tech);font-size:9px;color:var(--label);letter-spacing:2px;margin-left:5px}
+.card{background:linear-gradient(155deg,rgba(0,212,255,.028),transparent 55%),rgba(5,10,20,.92);border:1px solid var(--border2);border-radius:10px;padding:26px;margin-bottom:20px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,255,.3),rgba(0,255,204,.18),transparent)}
+.ch{display:flex;align-items:center;gap:12px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.ch-icon{width:38px;height:38px;border-radius:6px;background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.18);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.ch-title{font-family:var(--raj);font-size:18px;font-weight:600;letter-spacing:1.5px}
+.ch-sub{font-family:var(--tech);font-size:10px;color:var(--label);margin-top:3px;letter-spacing:1px}
+.fsec{margin-bottom:22px}
+.fsec-label{font-family:var(--raj);font-size:14px;font-weight:600;letter-spacing:2px;
+  text-transform:uppercase;color:rgba(0,212,255,.7);margin-bottom:16px;
+  display:flex;align-items:center;gap:8px}
+.fsec-num{color:var(--a);font-size:15px;margin-right:2px}
+.fsec-label::after{content:'';flex:1;height:1px;background:rgba(0,212,255,.2)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ff{display:flex;flex-direction:column;gap:7px}
+.ff label{font-family:var(--raj);font-size:13px;font-weight:600;
+  letter-spacing:1.5px;text-transform:uppercase;color:rgba(180,220,255,.85)}
+select{width:100%;background:rgba(5,10,22,.95);border:1px solid var(--border2);border-radius:5px;padding:12px 13px;color:var(--text);font-size:13px;font-family:var(--exo);font-weight:400;transition:border-color .18s,box-shadow .18s;outline:none;-webkit-appearance:none;appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='5' viewBox='0 0 9 5'%3E%3Cpath fill='%231e4060' d='M4.5 5L0 0h9z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px}
+select:hover{border-color:rgba(0,212,255,.28)}
+select:focus{border-color:rgba(0,212,255,.5);box-shadow:0 0 0 3px rgba(0,212,255,.06)}
+select:disabled{opacity:.2;cursor:not-allowed}
+option{background:#040a14;color:var(--text)}
+.btn{width:100%;padding:15px 24px;border:none;border-radius:5px;background:linear-gradient(135deg,rgba(0,212,255,.12),rgba(0,255,204,.07));border:1px solid rgba(0,212,255,.38);color:#fff;font-family:var(--raj);font-size:15px;font-weight:600;letter-spacing:3.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;position:relative;overflow:hidden;transition:all .22s;box-shadow:0 0 20px rgba(0,212,255,.08);margin-top:8px}
+.btn::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,212,255,.1),rgba(0,255,204,.06));opacity:0;transition:opacity .2s}
+.btn:hover::after{opacity:1}
+.btn:hover{border-color:rgba(0,212,255,.65);box-shadow:0 0 28px rgba(0,212,255,.18),inset 0 0 20px rgba(0,212,255,.03);transform:translateY(-1px)}
+.btn.busy .btxt{opacity:0}
+.btn.busy .spin{display:flex}
+.spin{display:none;position:absolute;width:16px;height:16px;border:2px solid rgba(0,212,255,.18);border-top-color:var(--a);border-radius:50%;animation:rot .7s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* =====================================================
+   RESULT SECTION — FULLY REWORKED FOR VISIBILITY
+   ===================================================== */
+.result{display:none;margin-bottom:20px}
+.result.on{display:block;animation:slideDown .5s cubic-bezier(.22,1,.36,1)}
+
+.res-box{
+  /* Solid dark background so video doesn't bleed through */
+  background: #030b14;
+  border: 1px solid rgba(0,212,255,.55);
+  border-radius: 14px;
+  padding: 36px 32px 32px;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  /* Multi-layer glow to make it pop off the screen */
+  box-shadow:
+    0 0 0 1px rgba(0,212,255,.15),
+    0 0 40px rgba(0,212,255,.2),
+    0 0 80px rgba(0,212,255,.08),
+    inset 0 0 60px rgba(0,212,255,.04);
+}
+
+/* Bright top border beam */
+.res-box::before{
+  content:'';
+  position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent 0%,var(--a) 30%,var(--a3) 70%,transparent 100%);
+  box-shadow: 0 0 20px rgba(0,212,255,.8), 0 0 40px rgba(0,212,255,.4);
+}
+
+/* Radial glow from top */
+.res-box::after{
+  content:'';
+  position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(0,212,255,.12),transparent 65%);
+}
+
+/* LIVE indicator row */
+.res-eye{
+  font-family:var(--tech);
+  font-size:11px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+  color:#ffffff;
+  margin-bottom:18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  position:relative;
+  z-index:2;
+  text-shadow: 0 0 12px rgba(0,255,204,.9);
+}
+
+.res-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--a3);
+  box-shadow: 0 0 10px var(--a3), 0 0 20px var(--a3);
+  animation:blink 1.5s infinite;
+}
+
+/* BIG PRICE — the main number */
+.res-price{
+  font-family:var(--raj);
+  font-size:72px;
+  font-weight:700;
+  letter-spacing:1px;
+  line-height:1;
+  margin-bottom:10px;
+  position:relative;
+  z-index:2;
+  background:linear-gradient(135deg,var(--a) 20%,var(--a3) 100%);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+
+.res-note{
+  font-family:var(--tech);
+  font-size:10px;
+  color:#7ab8d8;
+  letter-spacing:2px;
+  margin-bottom:28px;
+  position:relative;
+  z-index:2;
+  text-shadow: 0 0 8px rgba(0,212,255,.4);
+}
+
+/* CONFIDENCE BAR SECTION */
+.conf-area{
+  padding:20px 0 0;
+  border-top:1px solid rgba(0,212,255,.2);
+  position:relative;
+  z-index:2;
+}
+
+.conf-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+}
+
+.conf-lbl{
+  font-family:var(--tech);
+  font-size:10px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:#c8e8ff;
+  font-weight:500;
+}
+
+.conf-pct{
+  font-family:var(--raj);
+  font-size:26px;
+  font-weight:700;
+  background:linear-gradient(135deg,var(--a),var(--a3));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+
+.conf-track{
+  height:8px;
+  background:rgba(0,212,255,.1);
+  border-radius:4px;
+  overflow:hidden;
+  border:1px solid rgba(0,212,255,.2);
+}
+
+.conf-fill{
+  height:100%;
+  width:0;
+  border-radius:4px;
+  background:linear-gradient(90deg,#0077bb,#00d4ff,#00ffcc);
+  box-shadow:0 0 12px rgba(0,212,255,.8), 0 0 24px rgba(0,212,255,.4);
+  transition:width 2s cubic-bezier(.22,1,.36,1);
+}
+
+/* THREE STATS BOXES */
+.stats3{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+  margin-top:20px;
+  position:relative;
+  z-index:2;
+}
+
+.stbox{
+  background:rgba(0,212,255,.06);
+  border:1px solid rgba(0,212,255,.3);
+  border-radius:8px;
+  padding:16px 12px;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.stbox::before{
+  content:'';
+  position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,212,255,.5),transparent);
+}
+
+.stbox:hover{
+  border-color:rgba(0,212,255,.6);
+  box-shadow:0 0 18px rgba(0,212,255,.15);
+}
+
+/* Stat numbers — original gradient style */
+.stn{
+  font-family:var(--raj);
+  font-size:22px;
+  font-weight:700;
+  background:linear-gradient(135deg,var(--a),var(--a3));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  display:block;
+  margin-bottom:6px;
+}
+
+/* Stat labels — clean readable white, no harsh glow */
+.stl{
+  font-family:var(--tech);
+  font-size:9px;
+  color:#c8e8ff;
+  text-transform:uppercase;
+  letter-spacing:1.5px;
+}
+
+/* ===================================================== */
+
+.dash-btn{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:4px;border:1px solid rgba(0,212,255,.3);background:rgba(0,212,255,.06);color:var(--a);font-family:var(--tech);font-size:9px;letter-spacing:1.5px;text-decoration:none;text-transform:uppercase;transition:all .2s;}
+.dash-btn:hover{border-color:rgba(0,212,255,.65);background:rgba(0,212,255,.14);color:#fff;box-shadow:0 0 14px rgba(0,212,255,.2)}
+@media(max-width:560px){.brand-grid{grid-template-columns:repeat(4,1fr);gap:6px}.bt-logo{width:36px;height:28px}.g2{grid-template-columns:1fr}.hero h1{font-size:40px;letter-spacing:3px}.res-price{font-size:56px}.stats3{grid-template-columns:1fr 1fr}.stn{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="vbg">
+  <video autoplay muted loop playsinline>
+    <source src="/static/videos/user_bg.mp4" type="video/mp4">
+  </video>
+  <div class="vbg-shade"></div>
+</div>
+<div class="scanlines"></div>
+<div class="dotgrid"></div>
+<div class="corner c-tl"></div><div class="corner c-tr"></div>
+<div class="corner c-bl"></div><div class="corner c-br"></div>
+<div class="page">
+  <header class="topbar">
+    <div class="logo">
+      <div class="logo-icon">🚗</div>
+      <div class="logo-words">
+        <div class="logo-name">AutoOracle AI</div>
+        <div class="logo-tagline">Predictive Intelligence Engine</div>
+      </div>
+    </div>
+    <div class="badges">
+      <span class="badge badge-live">Model Live</span>
+      <span class="badge badge-r2">R² 0.835</span>
+      <a href="/teacher" class="dash-btn"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Dashboard</a>
+    </div>
+  </header>
+  <div class="hero">
+    <div class="hero-kicker">// Gradient Boosting · CarDekho Dataset · Indian Market</div>
+    <h1>PREDICT<br>RESALE VALUE</h1>
+    <div class="hero-sub">AI-powered valuation using real Indian used car market data.<br>Select your brand below to begin.</div>
+  </div>
+  <div class="sec-head">Select Your Car Brand</div>
+  <div class="brand-grid">
+    <div class="btile" data-brand="Maruti" style="--bt-c:#3ec6e0;--bt-bg:rgba(62,198,224,.06);--bt-glow:rgba(62,198,224,.15)" onclick="pickBrand(this)"><span class="bt-chk">✓</span><img class="bt-logo" src="/static/images/logo/maruti_suzuki.png" alt="Maruti"><span class="bt-name">Maruti</span></div>
+    <div class="btile" data-brand="Hyundai" style="--bt-c:#4a90d9;--bt-bg:rgba(74,144,217,.06);--bt-glow:rgba(74,144,217,.15)" onclick="pickBrand(this)"><span class="bt-chk">✓</span><img class="bt-logo" src="/static/images/logo/hyundai.png" alt="Hyundai"><span class="bt-name">Hyundai</span></div>
+    <div class="btile" data-brand="Mahindra" style="--bt-c:#e03030;--bt-bg:rgba(224,48,48,.06);--bt-glow:rgba(224,48,48,.15)" onclick="pickBrand(this)"><span class="bt-chk">✓</span><img class="bt-logo" src="/static/images/logo/mahindra.png" alt="Mahindra"><span class="bt-name">Mahindra</span></div>
+    <div class="btile" data-brand="Tata" style="--bt-c:#1b7fe0;--bt-bg:rgba(27,127,224,.06);--bt-glow:rgba(27,127,224,.15)" onclick="pickBrand(this)"><span class="bt-chk">✓</span><img class="bt-logo" src="/static/images/logo/tata.png" alt="Tata"><span class="bt-name">Tata</span></div>
+    <div class="btile" data-brand="Honda" style="--bt-c:#e8453c;--bt-bg:rgba(232,69,60,.06);--bt-glow:rgba(232,69,60,.15)" onclick="pickBrand(this)"><span class="bt-chk">✓</span><img class="bt-logo" src="/static/images/logo/honda.png" alt="Honda"><span class="bt-name">Honda</span></div>
+    <div class="btile" data-brand="Ford" style="--bt-c:#3b9ae8;--bt-bg:rgba(59,154,232,.06);--bt-glow:rgba(59,154,232,.15)" onclick="pickBrand(this)"><span class="bt-chk">✓</span><img class="bt-logo" src="/static/images/logo/ford.png" alt="Ford"><span class="bt-name">Ford</span></div>
+    <div class="btile" data-brand="Toyota" style="--bt-c:#e84040;--bt-bg:rgba(232,64,64,.06);--bt-glow:rgba(232,64,64,.15)" onclick="pickBrand(this)"><span class="bt-chk">✓</span><img class="bt-logo" src="/static/images/logo/toyota.png" alt="Toyota"><span class="bt-name">Toyota</span></div>
+    <div class="btile" data-brand="Chevrolet" style="--bt-c:#f0c040;--bt-bg:rgba(240,192,64,.06);--bt-glow:rgba(240,192,64,.15)" onclick="pickBrand(this)"><span class="bt-chk">✓</span><img class="bt-logo" src="/static/images/logo/chevrolet.png" alt="Chevrolet"><span class="bt-name">Chevrolet</span></div>
+  </div>
+  <div class="showcase" id="sc">
+    <div class="sc-box" id="scBox">
+      <div class="sc-topline"></div>
+      <div class="sc-ca tl"></div><div class="sc-ca tr"></div>
+      <div class="sc-ca bl"></div><div class="sc-ca br"></div>
+      <div class="sc-header">
+        <div class="sc-hleft">
+          <div class="sc-thumb" id="scThumb"><img id="scThumbImg" src="" alt=""></div>
+          <div>
+            <div class="sc-brand" id="scBrand">—</div>
+            <div class="sc-sub" id="scSub">SELECT A BRAND ABOVE</div>
+          </div>
+        </div>
+        <div class="sc-chip" id="scChip">NO MODEL</div>
+      </div>
+      <div class="sc-stage">
+        <div class="sc-skel" id="scSkel"></div>
+        <div class="sc-ring" id="scRing"></div>
+        <img class="sc-logo" id="scLogoImg" src="" alt="">
+        <div class="sc-floor"></div>
+      </div>
+      <div class="sc-model-label" id="scModelLabel">Select Model</div>
+      <div class="sc-models" id="scModels"></div>
+      <div class="km-wrap">
+        <div class="km-title">Odometer Reading — KM Driven</div>
+        <div class="km-outer" id="kmOuter">
+          <div class="km-track"><div class="km-fill" id="kmFill"></div></div>
+          <div class="km-car" id="kmCar">
+            <svg viewBox="0 0 62 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="16" width="58" height="11" rx="3" fill="#060f1e"/>
+              <path d="M13 16 Q18 6 25 5 L37 5 Q44 6 49 16Z" fill="#050c1a"/>
+              <path d="M15 16 Q20 8 25 7 L37 7 Q42 8 47 16Z" fill="rgba(0,212,255,.14)" stroke="rgba(0,212,255,.28)" stroke-width=".5"/>
+              <rect x="51" y="18" width="7" height="4" rx="2" fill="var(--sc-c,#00d4ff)" opacity=".9"/>
+              <ellipse cx="54.5" cy="20" rx="2.2" ry="1.8" fill="white" opacity=".5"/>
+              <rect x="4" y="18" width="5" height="4" rx="2" fill="#ff3d6b" opacity=".7"/>
+              <circle cx="16" cy="27" r="4.2" fill="#040b18" stroke="var(--sc-c,#00d4ff)" stroke-width="1.2"/>
+              <circle cx="16" cy="27" r="1.7" fill="#0a1622"/>
+              <circle cx="46" cy="27" r="4.2" fill="#040b18" stroke="var(--sc-c,#00d4ff)" stroke-width="1.2"/>
+              <circle cx="46" cy="27" r="1.7" fill="#0a1622"/>
+              <rect x="9" y="25" width="44" height="2" rx="1" fill="#0a1220"/>
+            </svg>
+          </div>
+          <input type="range" class="km-input" id="kmSlider" min="0" max="300000" step="5000" value="0">
+        </div>
+        <div class="km-marks"><span>0</span><span>75k</span><span>150k</span><span>225k</span><span>300k km</span></div>
+        <div class="km-val"><span class="km-num" id="kmNum">0</span><span class="km-unit">KM</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch">
+      <div class="ch-icon">⚙️</div>
+      <div><div class="ch-title">VEHICLE SPECS</div><div class="ch-sub">// All fields required for prediction accuracy</div></div>
+    </div>
+    <form id="predForm">
+      <input type="hidden" name="Brand" id="hidBrand">
+      <input type="hidden" name="Mileage" id="hidMileage" value="0">
+      <div class="fsec">
+        <div class="fsec-label"><span class="fsec-num">01 </span>Vehicle Details</div>
+        <div class="g2">
+          <div class="ff"><label>Fuel Type</label>
+            <select name="Fuel Type" required><option value="" disabled selected>Select fuel type</option>{% for f in cat_unique['Fuel Type'] %}<option value="{{ f }}">{{ f }}</option>{% endfor %}</select></div>
+          <div class="ff"><label>Transmission</label>
+            <select name="Transmission" required><option value="" disabled selected>Select transmission</option>{% for t in cat_unique['Transmission'] %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select></div>
+          <div class="ff"><label>Owner Type</label>
+            <select name="Owner" required><option value="" disabled selected>Select owner type</option>{% for o in cat_unique['Owner'] %}<option value="{{ o }}">{{ o }}</option>{% endfor %}</select></div>
+          <div class="ff"><label>Seller Type</label>
+            <select name="Seller Type" required><option value="" disabled selected>Select seller type</option>{% for s in cat_unique['Seller Type'] %}<option value="{{ s }}">{{ s }}</option>{% endfor %}</select></div>
+          <div class="ff"><label>Year of Purchase</label>
+            <select name="Year" required><option value="" disabled selected>Select year</option>{% for y in range(2024, 1991, -1) %}<option value="{{ y }}">{{ y }}</option>{% endfor %}</select></div>
+        </div>
+      </div>
+      <button type="submit" class="btn"><div class="spin"></div><span class="btxt">⚡ EXECUTE PREDICTION</span></button>
+    </form>
+  </div>
+  <div class="result" id="result">
+    <div class="res-box">
+      <div class="res-eye"><span class="res-dot"></span>AI ESTIMATED RESALE VALUE</div>
+      <div class="res-price" id="resPrice">—</div>
+      <div class="res-note">// Gradient Boosting · CarDekho · Indian Used Car Market</div>
+      <div class="conf-area">
+        <div class="conf-row">
+          <span class="conf-lbl">Model Confidence (R²)</span>
+          <span class="conf-pct" id="confPct">—</span>
+        </div>
+        <div class="conf-track"><div class="conf-fill" id="confFill"></div></div>
+      </div>
+      <div class="stats3">
+        <div class="stbox"><span class="stn" id="stR2">—</span><div class="stl">R² Score</div></div>
+        <div class="stbox"><span class="stn" id="stMae">—</span><div class="stl">MAE</div></div>
+        <div class="stbox"><span class="stn" id="stRmse">—</span><div class="stl">RMSE</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+const BD={Maruti:{lbl:"Maruti Suzuki",sub:"INDIA'S MOST TRUSTED",c:"#3ec6e0",c2:"#7ae8f5",bg:"rgba(62,198,224,.07)",b:"rgba(62,198,224,.22)",gl:"rgba(62,198,224,.28)",logo:"/static/images/logo/maruti_suzuki.png",models:["Swift","Alto","Wagon R","Ertiga"]},Hyundai:{lbl:"Hyundai",sub:"NEW THINKING NEW POSSIBILITIES",c:"#4a90d9",c2:"#7ab8f5",bg:"rgba(74,144,217,.07)",b:"rgba(74,144,217,.22)",gl:"rgba(74,144,217,.28)",logo:"/static/images/logo/hyundai.png",models:["i20","Verna","Grand i10","Santro"]},Mahindra:{lbl:"Mahindra",sub:"RISE",c:"#e03030",c2:"#f57070",bg:"rgba(224,48,48,.07)",b:"rgba(224,48,48,.22)",gl:"rgba(224,48,48,.28)",logo:"/static/images/logo/mahindra.png",models:["Scorpio","XUV500","Bolero","Xylo"]},Tata:{lbl:"Tata",sub:"CONNECTING ASPIRATIONS",c:"#1b7fe0",c2:"#60aaf5",bg:"rgba(27,127,224,.07)",b:"rgba(27,127,224,.22)",gl:"rgba(27,127,224,.28)",logo:"/static/images/logo/tata.png",models:["Indica","Indigo","Nano","Tiago"]},Honda:{lbl:"Honda",sub:"THE POWER OF DREAMS",c:"#e8453c",c2:"#f57870",bg:"rgba(232,69,60,.07)",b:"rgba(232,69,60,.22)",gl:"rgba(232,69,60,.28)",logo:"/static/images/logo/honda.png",models:["City","Amaze","Jazz","Brio"]},Ford:{lbl:"Ford",sub:"BUILT FOR THE ROAD AHEAD",c:"#3b9ae8",c2:"#70c0f5",bg:"rgba(59,154,232,.07)",b:"rgba(59,154,232,.22)",gl:"rgba(59,154,232,.28)",logo:"/static/images/logo/ford.png",models:["Figo","EcoSport","Fiesta","Endeavour"]},Toyota:{lbl:"Toyota",sub:"LET'S GO PLACES",c:"#e84040",c2:"#f57575",bg:"rgba(232,64,64,.07)",b:"rgba(232,64,64,.22)",gl:"rgba(232,64,64,.28)",logo:"/static/images/logo/toyota.png",models:["Innova","Etios","Fortuner","Corolla"]},Chevrolet:{lbl:"Chevrolet",sub:"FIND NEW ROADS",c:"#f0c040",c2:"#f5d870",bg:"rgba(240,192,64,.06)",b:"rgba(240,192,64,.2)",gl:"rgba(240,192,64,.24)",logo:"/static/images/logo/chevrolet.png",models:["Beat","Spark","Sail","Cruze"]}};
+let cBrand=null;
+function pickBrand(tile){
+  document.querySelectorAll(".btile").forEach(t=>t.classList.remove("sel"));
+  tile.classList.add("sel");
+  const brand=tile.dataset.brand,d=BD[brand];
+  cBrand=brand;
+  document.getElementById("hidBrand").value=brand;
+  const box=document.getElementById("scBox");
+  box.style.setProperty("--sc-c",d.c);box.style.setProperty("--sc-c2",d.c2);
+  box.style.setProperty("--sc-bg",d.bg);box.style.setProperty("--sc-b",d.b);box.style.setProperty("--sc-glow",d.gl);
+  document.getElementById("scThumbImg").src=d.logo;
+  document.getElementById("scThumb").style.background=d.bg;
+  document.getElementById("scThumb").style.borderColor=d.b;
+  document.getElementById("scBrand").textContent=d.lbl.toUpperCase();
+  document.getElementById("scBrand").style.color=d.c;
+  document.getElementById("scSub").textContent=d.sub;
+  const chip=document.getElementById("scChip");
+  chip.style.background=d.bg;chip.style.borderColor=d.b;chip.style.color=d.c;chip.textContent="SELECT MODEL";
+  document.getElementById("kmFill").style.background="linear-gradient(90deg,"+d.c+","+d.c2+")";
+  document.getElementById("kmNum").style.color=d.c;
+  const logo=document.getElementById("scLogoImg"),ring=document.getElementById("scRing"),skel=document.getElementById("scSkel");
+  logo.classList.remove("on");ring.classList.remove("on");skel.style.display="block";
+  logo.src=d.logo;
+  logo.onload=()=>{skel.style.display="none";logo.classList.add("on");ring.classList.add("on")};
+  logo.onerror=()=>{skel.style.display="none"};
+  const mc=document.getElementById("scModels");mc.innerHTML="";
+  d.models.forEach(m=>{const b=document.createElement("button");b.type="button";b.className="mbtn";b.textContent=m;b.onclick=()=>{mc.querySelectorAll(".mbtn").forEach(x=>x.classList.remove("on"));b.classList.add("on");chip.textContent=m.toUpperCase()};mc.appendChild(b)});
+  const sc=document.getElementById("sc");sc.classList.add("on");sc.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+const kmSlider=document.getElementById("kmSlider");
+function updateKM(){
+  const min=+kmSlider.min,max=+kmSlider.max,val=+kmSlider.value;
+  const pct=(val-min)/(max-min);
+  const outer=document.getElementById("kmOuter");
+  const trackEl=outer.querySelector(".km-track");
+  const trackW=trackEl.offsetWidth;
+  const cw=62, halfCar=cw/2;
+  const carCenter=halfCar + pct*(trackW - cw);
+  document.getElementById("kmCar").style.left=carCenter+"px";
+  document.getElementById("kmFill").style.width=carCenter+"px";
+  document.getElementById("kmNum").textContent=parseInt(val).toLocaleString("en-IN");
+  document.getElementById("hidMileage").value=val;
+}
+kmSlider.addEventListener("input",updateKM);
+window.addEventListener("load",updateKM);
+window.addEventListener("resize",updateKM);
+const form=document.getElementById("predForm"),btn=form.querySelector(".btn");
+form.addEventListener("submit",async function(e){
+  e.preventDefault();
+  if(!cBrand){alert("Please select a car brand first!");return;}
+  btn.classList.add("busy");btn.disabled=true;
+  const data={};new FormData(this).forEach((v,k)=>{data[k]=v});
+  data["Year"]=parseInt(data["Year"]);data["Mileage"]=parseInt(data["Mileage"]);
+  try{
+    const res=await fetch("/predict",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+    const json=await res.json();
+    btn.classList.remove("busy");btn.disabled=false;
+    if(json.error){alert("Error: "+json.error);return;}
+    const el=document.getElementById("resPrice");
+    const raw=parseInt((json.formatted||"0").replace(/[₹,\s]/g,""))||0;
+    let cur=0,s=0,steps=45,inc=raw/steps;
+    const t=setInterval(()=>{cur+=inc;s++;el.textContent="₹"+Math.round(cur).toLocaleString("en-IN");if(s>=steps){el.textContent=json.formatted;clearInterval(t)}},28);
+    document.getElementById("stR2").textContent=json.r2_score;
+    document.getElementById("stMae").textContent=json.mae;
+    document.getElementById("stRmse").textContent=json.rmse;
+    const r2p=Math.round(parseFloat(json.r2_score)*100);
+    document.getElementById("confPct").textContent=r2p+"%";
+    const result=document.getElementById("result");result.classList.add("on");
+    result.scrollIntoView({behavior:"smooth",block:"nearest"});
+    setTimeout(()=>{document.getElementById("confFill").style.width=r2p+"%"},300);
+  }catch{btn.classList.remove("busy");btn.disabled=false;alert("Prediction failed — is Flask running?");}
+});
+</script>
+</body>
+</html>
